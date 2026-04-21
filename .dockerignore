@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+downloads/
+*.log
+.git/
+.gitignore
+.DS_Store
+README.md
+DEPLOY.md

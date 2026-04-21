@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YT Downloader · YouTube 视频 / 音乐下载</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">▶</div>
+      <span class="brand-name">YT Downloader</span>
+    </div>
+    <div class="tag">Powered by yt-dlp · ffmpeg</div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>下载 YouTube 视频与音乐</h1>
+      <p class="subtitle">粘贴链接 · 选择格式与质量 · 一键下载到本地</p>
+    </section>
+
+    <section class="card url-card">
+      <div class="input-row">
+        <svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.71"/>
+        </svg>
+        <input id="url" type="url" placeholder="粘贴 YouTube 链接，如 https://youtu.be/..." autocomplete="off" />
+        <button id="fetchBtn" class="btn btn-primary">解析</button>
+      </div>
+      <div id="urlError" class="error-text hidden"></div>
+    </section>
+
+    <section id="infoCard" class="card info-card hidden">
+      <div class="thumb-wrap">
+        <img id="thumb" alt="thumbnail" />
+        <span id="duration" class="duration-badge"></span>
+      </div>
+      <div class="info-body">
+        <h2 id="title"></h2>
+        <div class="meta-row">
+          <span id="uploader" class="meta-chip"></span>
+          <span id="views" class="meta-chip"></span>
+        </div>
+
+        <div class="options">
+          <div class="option-group">
+            <label class="option-label">格式</label>
+            <div class="segmented" id="formatGroup">
+              <button class="seg active" data-value="mp4">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><polygon points="10 9 15 12 10 15"/></svg>
+                视频 MP4
+              </button>
+              <button class="seg" data-value="mp3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                音频 MP3
+              </button>
+            </div>
+          </div>
+
+          <div class="option-group">
+            <label class="option-label">质量</label>
+            <select id="quality" class="select">
+              <option value="best">最佳</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="downloadBtn" class="btn btn-accent btn-large">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          开始下载
+        </button>
+      </div>
+    </section>
+
+    <section id="progressCard" class="card progress-card hidden">
+      <div class="progress-head">
+        <span id="progressStatus">准备中…</span>
+        <span id="progressPercent">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+      <div class="progress-meta">
+        <span id="speedText">—</span>
+        <span id="etaText">—</span>
+      </div>
+      <a id="downloadLink" class="btn btn-success hidden" download>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+        获取文件
+      </a>
+      <div id="errorBox" class="error-box hidden"></div>
+    </section>
+
+    <section class="faq">
+      <details>
+        <summary>使用说明</summary>
+        <ul>
+          <li>支持 youtube.com、youtu.be、music.youtube.com 链接</li>
+          <li>MP4 会自动合并最佳视频与音频轨道</li>
+          <li>MP3 为从视频中提取的音频，默认 192kbps</li>
+          <li>请遵守版权规定，仅用于个人合理使用</li>
+        </ul>
+      </details>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Local service · <code>127.0.0.1:5055</code></span>
+  </footer>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
