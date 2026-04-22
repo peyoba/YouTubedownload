@@ -1,14 +1,21 @@
 import os
 import re
 import json
+import time
 import uuid
 import shutil
+import logging
 import subprocess
 from pathlib import Path
 from threading import Thread, Lock
 from flask import Flask, render_template, request, jsonify, send_file, abort
 
 app = Flask(__name__)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
 
 BASE_DIR = Path(__file__).parent.resolve()
 DOWNLOAD_DIR = BASE_DIR / "downloads"
@@ -50,11 +57,26 @@ USER_AGENT = (
 YTDLP_COMMON_ARGS = [
     "--user-agent", USER_AGENT,
     "--socket-timeout", "30",
-    "--extractor-args", "youtube:player_client=web;player_skip=js,configs;skip=hls,dash",
+    "--extractor-args", (
+        "youtube:player_client=web"
+        ";player_skip=js,configs"
+        ";skip=hls,dash"
+        ";lang=en"
+        ";age_gate=true"
+        ";innertube_client_version=2.20240101.00.00"
+    ),
     "--no-check-certificate",
     "--skip-unavailable-fragments",
     "--no-abort-on-unavailable-fragments",
+    "--sleep-interval", "2",
+    "--max-sleep-interval", "5",
+    "--http-chunk-size", "10485760",
 ]
+
+# Error substring that indicates YouTube's anti-bot page reload challenge
+_RELOAD_ERROR = "page needs to be reloaded"
+_RETRY_ATTEMPTS = 4          # initial attempt + 3 retries
+_RETRY_BACKOFF = [1, 2, 4]   # seconds to wait before each retry
 
 
 def cookies_args():
@@ -65,14 +87,59 @@ def cookies_args():
 
 
 def yt_dlp_json(url):
-    """调用 yt-dlp -J 获取视频元信息"""
-    result = subprocess.run(
-        [YT_DLP, "-J", "--no-warnings", "--no-playlist", "--ignore-errors"] + YTDLP_COMMON_ARGS + cookies_args() + [url],
-        capture_output=True, text=True, timeout=60,
+    """Call yt-dlp -J to fetch video metadata, with retry logic for anti-bot errors."""
+    cmd = (
+        [YT_DLP, "-J", "--no-warnings", "--no-playlist", "--ignore-errors",
+         "--playlist-items", "1"]
+        + YTDLP_COMMON_ARGS
+        + cookies_args()
+        + [url]
     )
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or "yt-dlp 解析失败")
-    return json.loads(result.stdout)
+
+    last_error = None
+    for attempt in range(_RETRY_ATTEMPTS):
+        if attempt > 0:
+            delay = _RETRY_BACKOFF[attempt - 1]
+            logging.info(
+                "yt-dlp metadata attempt %d/%d for %s — waiting %ds before retry",
+                attempt + 1, _RETRY_ATTEMPTS, url, delay,
+            )
+            time.sleep(delay)
+        else:
+            logging.info("yt-dlp metadata attempt 1/%d for %s", _RETRY_ATTEMPTS, url)
+
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=60,
+        )
+
+        if result.returncode == 0:
+            return json.loads(result.stdout)
+
+        stderr = result.stderr.strip()
+        last_error = stderr or "yt-dlp 解析失败"
+
+        if _RELOAD_ERROR in stderr.lower():
+            logging.warning(
+                "YouTube anti-bot challenge detected (attempt %d/%d): %s",
+                attempt + 1, _RETRY_ATTEMPTS, stderr,
+            )
+            # Propagate a user-friendly message on the final attempt
+            if attempt == _RETRY_ATTEMPTS - 1:
+                cookies_hint = (
+                    "" if COOKIES_FILE.exists()
+                    else " 建议上传 cookies.txt 以提高访问可靠性。"
+                )
+                raise RuntimeError(
+                    "YouTube 检测到自动访问并拒绝了请求（页面需要重新加载）。"
+                    f"已重试 {_RETRY_ATTEMPTS} 次，仍然失败。{cookies_hint}"
+                )
+            # Otherwise loop and retry
+            continue
+
+        # Non-retryable error — fail immediately
+        raise RuntimeError(last_error)
+
+    raise RuntimeError(last_error or "yt-dlp 解析失败")
 
 
 
