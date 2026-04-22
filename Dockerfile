@@ -16,10 +16,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 ENV PYTHONUNBUFFERED=1 \
-    PORT=8080 \
+    PORT=8000 \
     HOST=0.0.0.0
 
-EXPOSE 8080
+EXPOSE 8000
 
 # 单 worker + 多线程：subprocess 阻塞型任务用线程更合适，
 # 且内存中的 tasks 字典需要在同一进程内共享
