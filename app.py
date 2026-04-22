@@ -6,7 +6,6 @@ import shutil
 import subprocess
 from pathlib import Path
 from threading import Thread, Lock
-
 from flask import Flask, render_template, request, jsonify, send_file, abort
 
 app = Flask(__name__)
@@ -14,6 +13,7 @@ app = Flask(__name__)
 BASE_DIR = Path(__file__).parent.resolve()
 DOWNLOAD_DIR = BASE_DIR / "downloads"
 DOWNLOAD_DIR.mkdir(exist_ok=True)
+COOKIES_FILE = BASE_DIR / "cookies.txt"
 
 # 优先使用系统 yt-dlp（通常是最新版本）
 YT_DLP = shutil.which("yt-dlp") or "yt-dlp"
@@ -55,15 +55,23 @@ YTDLP_COMMON_ARGS = [
 ]
 
 
+def cookies_args():
+    """Return --cookies flag args if cookies.txt exists, else empty list."""
+    if COOKIES_FILE.exists():
+        return ["--cookies", str(COOKIES_FILE)]
+    return []
+
+
 def yt_dlp_json(url):
     """调用 yt-dlp -J 获取视频元信息"""
     result = subprocess.run(
-        [YT_DLP, "-J", "--no-warnings", "--no-playlist"] + YTDLP_COMMON_ARGS + [url],
+        [YT_DLP, "-J", "--no-warnings", "--no-playlist"] + YTDLP_COMMON_ARGS + cookies_args() + [url],
         capture_output=True, text=True, timeout=60,
     )
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or "yt-dlp 解析失败")
     return json.loads(result.stdout)
+
 
 
 @app.route("/")
@@ -112,7 +120,7 @@ def run_download(task_id, url, fmt, quality):
         "--progress",
         "-o", out_tmpl,
         "--print-json",       # 结束时打印 JSON
-    ] + YTDLP_COMMON_ARGS
+    ] + YTDLP_COMMON_ARGS + cookies_args()
 
     if fmt == "mp3":
         q = str(quality) if str(quality).isdigit() else "192"
@@ -121,6 +129,7 @@ def run_download(task_id, url, fmt, quality):
             "-f", "bestaudio/best",
         ]
         final_ext = "mp3"
+
     else:
         if str(quality).isdigit():
             selector = (
@@ -274,6 +283,29 @@ def api_cleanup():
         except Exception:
             pass
     return jsonify({"ok": True})
+
+
+@app.route("/api/upload-cookies", methods=["POST"])
+def api_upload_cookies():
+    if "cookies_file" not in request.files:
+        return jsonify({"error": "No file provided. Use field name 'cookies_file'."}), 400
+    f = request.files["cookies_file"]
+    if not f or f.filename == "":
+        return jsonify({"error": "Empty filename."}), 400
+    f.save(str(COOKIES_FILE))
+    return jsonify({"ok": True, "message": "Cookies uploaded successfully."})
+
+
+@app.route("/api/cookies-status")
+def api_cookies_status():
+    exists = COOKIES_FILE.exists()
+    if exists:
+        message = "Cookies file is present. YouTube requests will use authentication."
+    else:
+        message = "No cookies file found. Requests may be blocked by YouTube."
+    return jsonify({"cookies_present": exists, "message": message})
+
+
 
 
 if __name__ == "__main__":

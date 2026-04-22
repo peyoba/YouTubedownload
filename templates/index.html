@@ -97,6 +97,37 @@
       <div id="errorBox" class="error-box hidden"></div>
     </section>
 
+    <section class="card cookies-card">
+      <div class="cookies-header">
+        <div class="cookies-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cookies-icon"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>YouTube 认证 Cookies</span>
+        </div>
+        <div id="cookiesStatus" class="cookies-status-badge cookies-status-unknown">检测中…</div>
+      </div>
+      <p class="cookies-desc">
+        如果下载时遇到 <strong>"Sign in to confirm you're not a bot"</strong> 错误，请上传您的 YouTube cookies 文件以进行身份验证。
+      </p>
+      <div class="cookies-upload-row">
+        <label class="file-label" for="cookiesFile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          选择 cookies.txt
+        </label>
+        <input id="cookiesFile" type="file" accept=".txt" class="hidden" />
+        <span id="cookiesFileName" class="file-name-display">未选择文件</span>
+        <button id="uploadCookiesBtn" class="btn btn-primary" disabled>上传</button>
+      </div>
+      <div id="cookiesMsg" class="cookies-msg hidden"></div>
+      <details class="cookies-help">
+        <summary>如何获取 cookies.txt？</summary>
+        <ul>
+          <li>安装浏览器扩展 <strong>Get cookies.txt LOCALLY</strong>（Chrome / Firefox），在 YouTube 登录后导出 cookies.txt</li>
+          <li>或在本地运行：<code>yt-dlp --cookies-from-browser firefox https://www.youtube.com --skip-download</code>，生成的 cookies.txt 即可上传</li>
+          <li>上传后 cookies 将保存在服务器，所有后续下载请求均会自动使用</li>
+        </ul>
+      </details>
+    </section>
+
     <section class="faq">
       <details>
         <summary>使用说明</summary>
