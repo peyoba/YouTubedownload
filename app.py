@@ -50,8 +50,10 @@ USER_AGENT = (
 YTDLP_COMMON_ARGS = [
     "--user-agent", USER_AGENT,
     "--socket-timeout", "30",
-    "--extractor-args", "youtube:player_client=web;player_skip=js,configs",
+    "--extractor-args", "youtube:player_client=web;player_skip=js,configs;skip=hls,dash",
     "--no-check-certificate",
+    "--skip-unavailable-fragments",
+    "--no-abort-on-unavailable-fragments",
 ]
 
 
@@ -65,7 +67,7 @@ def cookies_args():
 def yt_dlp_json(url):
     """调用 yt-dlp -J 获取视频元信息"""
     result = subprocess.run(
-        [YT_DLP, "-J", "--no-warnings", "--no-playlist"] + YTDLP_COMMON_ARGS + cookies_args() + [url],
+        [YT_DLP, "-J", "--no-warnings", "--no-playlist", "--ignore-errors"] + YTDLP_COMMON_ARGS + cookies_args() + [url],
         capture_output=True, text=True, timeout=60,
     )
     if result.returncode != 0:
