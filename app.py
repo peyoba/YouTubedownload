@@ -41,10 +41,24 @@ def format_duration(seconds):
     return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
 
 
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/125.0.0.0 Safari/537.36"
+)
+
+YTDLP_COMMON_ARGS = [
+    "--user-agent", USER_AGENT,
+    "--socket-timeout", "30",
+    "--extractor-args", "youtube:player_client=web;player_skip=js,configs",
+    "--no-check-certificate",
+]
+
+
 def yt_dlp_json(url):
     """调用 yt-dlp -J 获取视频元信息"""
     result = subprocess.run(
-        [YT_DLP, "-J", "--no-warnings", "--no-playlist", url],
+        [YT_DLP, "-J", "--no-warnings", "--no-playlist"] + YTDLP_COMMON_ARGS + [url],
         capture_output=True, text=True, timeout=60,
     )
     if result.returncode != 0:
@@ -98,7 +112,7 @@ def run_download(task_id, url, fmt, quality):
         "--progress",
         "-o", out_tmpl,
         "--print-json",       # 结束时打印 JSON
-    ]
+    ] + YTDLP_COMMON_ARGS
 
     if fmt == "mp3":
         q = str(quality) if str(quality).isdigit() else "192"
