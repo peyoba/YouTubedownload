@@ -240,6 +240,82 @@ function updateProgress(s) {
   else etaText.textContent = "—";
 }
 
+// ========== Cookies 管理 ==========
+const cookiesFileInput = $("cookiesFile");
+const cookiesFileName = $("cookiesFileName");
+const uploadCookiesBtn = $("uploadCookiesBtn");
+const cookiesMsg = $("cookiesMsg");
+const cookiesStatus = $("cookiesStatus");
+
+async function checkCookiesStatus() {
+  try {
+    const res = await fetch("/api/cookies-status");
+    const data = await res.json();
+    if (data.cookies_present) {
+      cookiesStatus.textContent = "✓ Cookies 已配置";
+      cookiesStatus.className = "cookies-status-badge cookies-status-ok";
+    } else {
+      cookiesStatus.textContent = "未配置 Cookies";
+      cookiesStatus.className = "cookies-status-badge cookies-status-missing";
+    }
+  } catch {
+    cookiesStatus.textContent = "状态未知";
+    cookiesStatus.className = "cookies-status-badge cookies-status-unknown";
+  }
+}
+
+cookiesFileInput.addEventListener("change", () => {
+  const file = cookiesFileInput.files[0];
+  if (file) {
+    cookiesFileName.textContent = file.name;
+    uploadCookiesBtn.disabled = false;
+  } else {
+    cookiesFileName.textContent = "未选择文件";
+    uploadCookiesBtn.disabled = true;
+  }
+  cookiesMsg.classList.add("hidden");
+  cookiesMsg.className = "cookies-msg hidden";
+});
+
+uploadCookiesBtn.addEventListener("click", async () => {
+  const file = cookiesFileInput.files[0];
+  if (!file) return;
+
+  uploadCookiesBtn.disabled = true;
+  uploadCookiesBtn.textContent = "上传中…";
+
+  const formData = new FormData();
+  formData.append("cookies_file", file);
+
+  try {
+    const res = await fetch("/api/upload-cookies", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      cookiesMsg.textContent = "✓ Cookies 上传成功！后续下载将自动使用身份验证。";
+      cookiesMsg.className = "cookies-msg success";
+      cookiesMsg.classList.remove("hidden");
+      checkCookiesStatus();
+    } else {
+      cookiesMsg.textContent = `上传失败：${data.error || "未知错误"}`;
+      cookiesMsg.className = "cookies-msg error";
+      cookiesMsg.classList.remove("hidden");
+    }
+  } catch (e) {
+    cookiesMsg.textContent = `上传出错：${e.message}`;
+    cookiesMsg.className = "cookies-msg error";
+    cookiesMsg.classList.remove("hidden");
+  } finally {
+    uploadCookiesBtn.disabled = false;
+    uploadCookiesBtn.textContent = "上传";
+  }
+});
+
+// 页面加载时检查 cookies 状态
+checkCookiesStatus();
+
 // ========== 事件绑定 ==========
 fetchBtn.addEventListener("click", fetchInfo);
 urlInput.addEventListener("keydown", (e) => {
