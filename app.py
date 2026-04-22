@@ -133,11 +133,11 @@ def run_download(task_id, url, fmt, quality):
     else:
         if str(quality).isdigit():
             selector = (
-                f"bv*[ext=mp4][height<={quality}]+ba[ext=m4a]/"
-                f"b[ext=mp4][height<={quality}]/b[height<={quality}]/b"
+                f"bv*[height<={quality}]+ba/"
+                f"b[height<={quality}]/b"
             )
         else:
-            selector = "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b"
+            selector = "bv*+ba/b"
         cmd += [
             "-f", selector,
             "--merge-output-format", "mp4",
